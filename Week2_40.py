@@ -30,12 +30,37 @@ fake_data = {
 }
 
 
-books_db: List[Book] = []  # Fake DB
+books_db: List[Book] = [Book(**fake_data)]  # Fake DB
 
 
-@app.on_event("startup")
-async def startup_event():
-    books_db.append(Book(**fake_data))
+# 심화 기능 - 도서 검색 대충 인터넷 검색 해보니까 경로가 겹치는 문제가 있었음...
+@app.get("/books/search/", response_model=List[Book])
+def search_book(
+    title: Optional[str] = None, 
+    author: Optional[str] = None, 
+    published_year: Optional[int] = None
+    ):
+    results = books_db
+    if title:
+        tempresult = []
+        for data in results:
+            if title.lower() in data.title.lower():
+                tempresult.append(data)
+        results = tempresult
+
+    if author:
+        tempresult = []
+        for data in results:
+            if author.lower() in data.author.lower():
+                tempresult.append(data)
+        results = tempresult
+    if published_year:
+        tempresult = []
+        for data in results:
+            if published_year == data.published_year:
+                tempresult.append(data)
+        results = tempresult
+    return results
 
 
 @app.post("/books/", response_model=Book)
@@ -77,17 +102,7 @@ def delete_book(book_id: int):
     raise HTTPException(status_code=404, detail="Book not found")
 
 
-# 심화 기능 - 도서 검색
-@app.get("/books/search/", response_model=List[Book])
-def search_book(title: Optional[str] = None, author: Optional[str] = None, published_year: Optional[int] = None):
-    results = books_db
-    if title:
-        results = [book for book in results if title.lower() in book.title.lower()]
-    if author:
-        results = [book for book in results if author.lower() in book.author.lower()]
-    if published_year:
-        results = [book for book in results if book.published_year == published_year]
-    return results
+
 
 
 
